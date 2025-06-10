@@ -2,7 +2,6 @@
 
 namespace LLMSpeak\Providers;
 
-use Agents\GoodBuddy\Managers\LLMProviderManager;
 use Illuminate\Support\ServiceProvider;
 use LLMSpeak\Managers\LLMServiceManager;
 
@@ -26,7 +25,6 @@ class LLMSpeakServiceProvider extends ServiceProvider
     protected function registerManagers(): void
     {
         LLMServiceManager::boot();
-        LLMProviderManager::boot();
     }
 
     protected function publishConfigs() : void
