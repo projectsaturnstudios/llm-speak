@@ -3,7 +3,7 @@
 namespace LLMSpeak\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use LLMSpeak\Managers\LLMServiceManager;
+use LLMSpeak\Managers\LLMCommunicationManager;
 
 class LLMSpeakServiceProvider extends ServiceProvider
 {
@@ -24,14 +24,14 @@ class LLMSpeakServiceProvider extends ServiceProvider
 
     protected function registerManagers(): void
     {
-        LLMServiceManager::boot();
+        LLMCommunicationManager::boot();
     }
 
     protected function publishConfigs() : void
     {
         $this->publishes([
             $this->config['llms'] => config_path('llms.php'),
-        ], 'mcp');
+        ], 'llm');
     }
 
     protected function registerConfigs() : void
