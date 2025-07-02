@@ -1,24 +1,48 @@
 <?php
 
-use LLMSpeak\Support\Facades\LLMSpeak;
-use LLMSpeak\Communication\LLMChatRequest;
-use LLMSpeak\Communication\LLMChatResponse;
-use LLMSpeak\Drivers\LLMCommunicationServiceDriver;
+use LLMSpeak\LLMs\LLMService;
+use LLMSpeak\Support\Facades\LLM;
+use LLMSpeak\Schema\Chat\ChatResult;
+use LLMSpeak\Schema\Chat\ChatRequest;
 
 if(!function_exists('speak_with'))
 {
-    function speak_with(string $llm_driver, ?LLMChatRequest $request = null): LLMCommunicationServiceDriver|LLMChatResponse
+    /**
+     * @param string $llm_service
+     * @param ChatRequest $request
+     * @return ChatResult
+     * @throws Exception
+     */
+    function speak_with(string $llm_service, ChatRequest $request, ?string $version = null): ChatResult
     {
-        $driver = LLMSpeak::driver($llm_driver);
-        if(!is_null($request)) return $driver->chat($request);
-        return $driver;
+        return LLM::driver($llm_service)->text($request, $version);
     }
 }
 
-if(!function_exists('chat_with'))
+if(!function_exists('stream_with'))
 {
-    function chat_with(string $llm_driver, ?LLMChatRequest $request = null): LLMCommunicationServiceDriver|LLMChatResponse
+    /**
+     * @param string $llm_service
+     * @param ChatRequest $request
+     * @return ChatResult
+     * @throws Exception
+     */
+    function stream_with(string $llm_service, ChatRequest $request, ?string $version = null): ChatResult
     {
-        return speak_with($llm_driver, $request);
+        return LLM::driver($llm_service)->stream($request, $version);
+    }
+}
+
+if(!function_exists('show_structure_to'))
+{
+    /**
+     * @param string $llm_service
+     * @param ChatRequest $request
+     * @return ChatResult
+     * @throws Exception
+     */
+    function show_structure_to(string $llm_service, ChatRequest $request, ?string $version = null): ChatResult
+    {
+        return LLM::driver($llm_service)->structured($request, $version);
     }
 }

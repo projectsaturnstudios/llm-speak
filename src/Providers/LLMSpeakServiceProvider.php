@@ -2,13 +2,21 @@
 
 namespace LLMSpeak\Providers;
 
+use Agents\GoodBuddy\Console\Commands\AgentTestCommand;
 use Illuminate\Support\ServiceProvider;
-use LLMSpeak\Managers\LLMCommunicationManager;
+use LLMSpeak\Builders\ChatRequestor;
+use LLMSpeak\LLMManager;
+
+//use LLMSpeak\Managers\LLMCommunicationManager;
 
 class LLMSpeakServiceProvider extends ServiceProvider
 {
     protected array $config = [
         'llms' => __DIR__ .'/../../config/llms.php',
+    ];
+
+    protected array $commands = [
+
     ];
 
     public function register(): void
@@ -20,11 +28,18 @@ class LLMSpeakServiceProvider extends ServiceProvider
     {
         $this->publishConfigs();
         $this->registerManagers();
+        $this->registerCommands();
+    }
+
+    protected function registerCommands(): void
+    {
+        $this->commands($this->commands);
     }
 
     protected function registerManagers(): void
     {
-        LLMCommunicationManager::boot();
+        LLMManager::boot();
+        ChatRequestor::boot();
     }
 
     protected function publishConfigs() : void
