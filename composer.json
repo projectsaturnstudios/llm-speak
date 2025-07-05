@@ -2,7 +2,7 @@
     "name": "projectsaturnstudios/llm-speak",
     "description": "A Laravel package for connecting to LLM Providers like Gemini, Claude and ChatGPT",
     "type": "library",
-    "version": "0.3.1",
+    "version": "0.3.2",
     "license": "MIT",
     "authors": [
         {

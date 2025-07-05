@@ -41,7 +41,7 @@ class AnthropicLLMService extends LLMService
         /** @var ClaudeCallResult $response */
         $response = $setup->withMessages(static::convertConversation($request->messages))
             ->handle();
-        VarDumper::dump(["Fucking shit dude", $response]);
+
         if($response->type == 'message')
         {
             $results = (new ChatResult())
@@ -72,13 +72,11 @@ class AnthropicLLMService extends LLMService
      */
     public static function convertConversation(array $convo): array
     {
-
         $converted_convo = array_map(function(ConversationObject $entry){
             if($entry instanceof TextMessage) return ['role' => ClaudeRole::from($entry->role), 'content' => $entry->content];
             elseif($entry instanceof ToolCall) return ['id' => $entry->id, 'name' => $entry->tool, 'input' => $entry->input];
             elseif($entry instanceof ToolResult)
             {
-                VarDumper::dump(["Tool Result Entry", $entry]);
                 $content = is_string($entry->result) ? $entry->result : $entry->result[0]['text'];
                 return ['tool_use_id' => $entry->id, 'content' => $content];
             }

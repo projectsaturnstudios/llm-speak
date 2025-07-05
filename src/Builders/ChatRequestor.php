@@ -33,31 +33,46 @@ class ChatRequestor
     {
         $tool_name = null;
         $this->payload['messages'] = array_map(function($entry) use(&$tool_name) {
-            if(is_string($entry['content'])) return new TextMessage($entry['role'], $entry['content']);
-            else{
-                $role = $entry['role'];
-                if(array_key_exists(0, $entry['content']))
-                {
-                    if($entry['content'][0]['type'] == 'tool_use')
-                    {
-                        $tool = $entry['content'][0];
-                        $tool_name = $tool['name'];
-                        return new ToolCall($tool['name'], $tool['input'], $tool['id']);
-                    }
-                    elseif($entry['content'][0]['type'] == 'tool_result')
-                    {
-                        $tool = $entry['content'][0];
-                        $id = 0;
-                        if(array_key_exists('tool_use_id', $tool)) $id = $tool['tool_use_id'];
-                        else dd('suppies', $entry);
 
-                        return new ToolResult($role, $tool_name, $tool['content'], $id);
+            if(array_key_exists('content', $entry))
+            {
+                if(is_string($entry['content'])) return new TextMessage($entry['role'], $entry['content']);
+                else{
+                    $role = $entry['role'];
+                    if(array_key_exists(0, $entry['content']))
+                    {
+                        if($entry['content'][0]['type'] == 'tool_use')
+                        {
+                            $tool = $entry['content'][0];
+                            $tool_name = $tool['name'];
+                            return new ToolCall($tool['name'], $tool['input'], $tool['id']);
+                        }
+                        elseif($entry['content'][0]['type'] == 'tool_result')
+                        {
+                            $tool = $entry['content'][0];
+                            $id = 0;
+                            if(array_key_exists('tool_use_id', $tool)) $id = $tool['tool_use_id'];
+                            else dd('suppies', $entry);
+
+                            return new ToolResult($role, $tool_name, $tool['content'], $id);
+                        }
+                        dd($entry, 'ChatRequestor - 60 - missing a content type');
                     }
-                    dd($entry, 'dumbass');
+                    dd($entry, 'ChatRequestor - 62 - missing something else');
                 }
-                dd($entry, 'shit head');
+                dd($entry, 'ChatRequestor - 64 - very strange issue');
             }
-            dd($entry, 'fuck face');
+            elseif(array_key_exists('parts', $entry))
+            {
+                foreach($entry['parts'] as $part)
+                {
+                    $role = $entry['role'];
+                    if(array_key_exists('text', $part)) return (new TextMessage($entry['role'], $part['text']))->addConnection('gemini');
+                    elseif(array_key_exists('functionCall', $part)) return new ToolCall($part['functionCall']['name'], $part['functionCall']['args'], "0{$part['functionCall']['name']}");
+                    elseif(array_key_exists('functionResponse', $part)) return new ToolResult($role, $part['functionResponse']['name'], $part['functionResponse']['response']['content'], "0{$part['functionResponse']['name']}");
+                }
+            }
+
         }, $messages);
         return $this;
     }

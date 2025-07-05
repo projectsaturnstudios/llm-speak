@@ -2,8 +2,6 @@
 
 namespace LLMSpeak\LLMs;
 
-use LLMSpeak\Anthropic\ClaudeCallResult;
-use LLMSpeak\Anthropic\Support\Facades\Claude;
 use LLMSpeak\Google\Builders\ConversationBuilder;
 use LLMSpeak\Google\Builders\SystemPromptBuilder;
 use LLMSpeak\Google\Enums\GeminiRole;
@@ -17,6 +15,7 @@ use LLMSpeak\Schema\Conversation\ToolCall;
 use LLMSpeak\Schema\Conversation\ToolResult;
 use LLMSpeak\Support\Facades\CreateChatRequest;
 use LLMSpeak\Support\Facades\LLM;
+use Symfony\Component\VarDumper\VarDumper;
 
 class GeminiLLMService extends LLMService
 {
@@ -29,7 +28,6 @@ class GeminiLLMService extends LLMService
     }
     public function text(ChatRequest $request): ChatResult
     {
-
         $setup = Gemini::generateContent()
             ->withApikey($request->credentials['api_key'] ?? Gemini::api_key())
             ->withModel($request->model);
@@ -58,6 +56,8 @@ class GeminiLLMService extends LLMService
                     {
                         if($col == 'text') $results = $results->addMessage(new TextMessage($cnt['role'], $val));
                         elseif($col == 'functionCall') $results = $results->addToolRequest(new ToolCall($val['name'], $val['args'], $response->responseId));
+                        elseif($col == 'thoughtSignature') VarDumper::dump("ThoughtSignature included, but not supported yet: {$val}");
+                        else dd(['you found a spot!', $col, $val]);
                     }
                 }
 
@@ -72,9 +72,21 @@ class GeminiLLMService extends LLMService
     public static function convertConversation(array $convo): array
     {
         $converted_convo = array_map(function(ConversationObject $entry){
-            if($entry instanceof TextMessage) return ['role' => GeminiRole::from($entry->role), 'content' => $entry->content];
-            if($entry instanceof ToolCall) return ['name' => $entry->tool, 'input' => $entry->input];
-            if($entry instanceof ToolResult) return ['name' => $entry->tool, 'content' => $entry->result];
+            if($entry instanceof TextMessage)
+            {
+                $role = $entry->role;
+                if($entry->role == 'assistant') $role = 'model';
+                return ['role' => GeminiRole::from($role), 'content' => $entry->content];
+            }
+            if($entry instanceof ToolCall)
+            {
+                return [/*'id' => $entry->id,*/ 'name' => $entry->tool, 'input' => $entry->input];
+            }
+            if($entry instanceof ToolResult)
+            {
+                $content = is_string($entry->result) ? $entry->result : $entry->result[0]['text'];
+                return ['name' => $entry->tool, 'content' => $content];
+            }
             else throw new \Exception("Unsupported conversation object type: " . get_class($entry));
         }, $convo);
 
@@ -82,12 +94,13 @@ class GeminiLLMService extends LLMService
 
         foreach($converted_convo as $entry)
         {
-            if(array_key_exists('input', $entry)) $final_convo = $final_convo->addToolRequest(...$entry);
+            if(array_key_exists('tool_use_id', $entry)) $final_convo = $final_convo->addToolResult(...$entry);
             elseif(array_key_exists('content', $entry))
             {
                 if(is_string($entry['content']) && array_key_exists('name', $entry)) $final_convo = $final_convo->addToolResult(...$entry);
                 elseif(is_string($entry['content'])) $final_convo = $final_convo->addText(...$entry);
             }
+            elseif(array_key_exists('input', $entry)) $final_convo = $final_convo->addToolRequest(...$entry);
         }
 
         return $final_convo->render();
