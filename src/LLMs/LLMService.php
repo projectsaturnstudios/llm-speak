@@ -9,7 +9,7 @@ use LLMSpeak\Schema\Chat\ChatResult;
 abstract class LLMService implements LLMServiceContract
 {
     abstract public static function convertConversation(array $convo): array;
-    abstract public static function convertSystemPrompt(array $convo): array;
+    abstract public static function convertSystemPrompt(array $convo): array|string;
     abstract public static function defaultCredentials(): array;
 
     public function text(ChatRequest $request): ChatResult
