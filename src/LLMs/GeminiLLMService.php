@@ -3,9 +3,12 @@
 namespace LLMSpeak\LLMs;
 
 use LLMSpeak\Google\Builders\ConversationBuilder;
+use LLMSpeak\Google\Builders\EmbeddingQueryBuilder;
 use LLMSpeak\Google\Builders\SystemPromptBuilder;
 use LLMSpeak\Google\Enums\GeminiRole;
+use LLMSpeak\Google\Enums\GeminiTaskType;
 use LLMSpeak\Google\GeminiCallResult;
+use LLMSpeak\Google\GeminiEmbeddingResult;
 use LLMSpeak\Google\Support\Facades\Gemini;
 use LLMSpeak\Schema\Chat\ChatRequest;
 use LLMSpeak\Schema\Chat\ChatResult;
@@ -13,6 +16,8 @@ use LLMSpeak\Schema\Conversation\ConversationObject;
 use LLMSpeak\Schema\Conversation\TextMessage;
 use LLMSpeak\Schema\Conversation\ToolCall;
 use LLMSpeak\Schema\Conversation\ToolResult;
+use LLMSpeak\Schema\Embeddings\EmbeddingRequest;
+use LLMSpeak\Schema\Embeddings\EmbeddingResult;
 use LLMSpeak\Support\Facades\CreateChatRequest;
 use LLMSpeak\Support\Facades\LLM;
 use Symfony\Component\VarDumper\VarDumper;
@@ -26,19 +31,19 @@ class GeminiLLMService extends LLMService
             throw new \Exception("Gemini LLM Service is not available. Please install the Gemini package.");
         }
     }
+
     public function text(ChatRequest $request): ChatResult
     {
         $setup = Gemini::generateContent()
             ->withApikey($request->credentials['api_key'] ?? Gemini::api_key())
             ->withModel($request->model);
 
-        if($request->system_prompts) $setup = $setup->withSystemPrompt($request->system_prompts);
+        if($request->system_prompts) $setup = $setup->withSystemPrompt(static::convertSystemPrompt($request->system_prompts));
         if($request->max_tokens) $setup = $setup->withMaxTokens($request->max_tokens);
         if($request->temperature) $setup = $setup->withTemperature($request->temperature);
         if($request->tools) $setup = $setup->withTools($request->tools);
-
         /** @var GeminiCallResult $response */
-        $response = $setup->withChat($request->messages)
+        $response = $setup->withChat(static::convertConversation($request->messages))
             ->handle();
 
         $results = (new ChatResult())
@@ -67,6 +72,34 @@ class GeminiLLMService extends LLMService
         }
 
         return new ChatResult();
+    }
+
+    public function embeddings(EmbeddingRequest $request): EmbeddingResult
+    {
+        $setup = Gemini::embedContent()
+            ->withApikey(Gemini::api_key())
+            ->withModel($request->model);
+
+        if(array_key_exists('taskType', $request->getAdditionalData()))
+        {
+            $setup = $setup->asTaskType($request->getAdditionalData()['taskType']);
+        }
+
+        // Add optional parameters
+        if($request->messages) $setup = $setup->withContent($request->messages);
+
+        /** @var GeminiEmbeddingResult $response */
+        $response = $setup->handle();
+        $results = (new EmbeddingResult())
+            ->addModel($request->model);
+
+        if(count($response->embedding) > 0) {
+            foreach($response->embedding as $embedding) {
+                $results = $results->addEmbedding($embedding);
+            }
+        }
+
+        return $results;
     }
 
     public static function convertConversation(array $convo): array
@@ -146,7 +179,7 @@ class GeminiLLMService extends LLMService
 
         $request = CreateChatRequest::usingModel('gemini-1.5-flash')
             ->supplyCredentials(['api_key' => Gemini::api_key()])
-            ->instillASystemPrompt(static::convertSystemPrompt($system))
+            ->instillASystemPrompt($system)
             ->limitTokens(200)
             ->setTemperature(0.5)
             ->includeMessages(static::convertConversation($convo))
@@ -168,7 +201,7 @@ class GeminiLLMService extends LLMService
 
         $request = CreateChatRequest::usingModel('gemini-2.5-flash')
             ->supplyCredentials(['api_key' => Gemini::api_key()])
-            ->instillASystemPrompt(static::convertSystemPrompt($system))
+            ->instillASystemPrompt($system)
             ->limitTokens(200)
             ->setTemperature(0.5)
             ->allowAccessToTools([
@@ -212,7 +245,7 @@ class GeminiLLMService extends LLMService
 
         $request = CreateChatRequest::usingModel('gemini-2.5-flash')
             ->supplyCredentials(['api_key' => Gemini::api_key()])
-            ->instillASystemPrompt(static::convertSystemPrompt($system))
+            ->instillASystemPrompt($system)
             ->limitTokens(200)
             ->setTemperature(0.5)
             ->allowAccessToTools([
@@ -239,5 +272,19 @@ class GeminiLLMService extends LLMService
             ->create();
 
         return LLM::driver('gemini')->text($request);
+    }
+
+    public static function test4(): ?EmbeddingResult
+    {
+        $convo = (new EmbeddingQueryBuilder)
+            ->addQuery("What happens if I get pulled over for speeding?")
+            ->render();
+
+        $request = (new EmbeddingRequest(
+            'gemini-embedding-exp-03-07',
+            $convo
+        ))->additional(['taskType' => GeminiTaskType::QUESTION_ANSWERING]);
+
+        return LLM::driver('gemini')->embeddings($request);
     }
 }

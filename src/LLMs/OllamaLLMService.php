@@ -2,10 +2,12 @@
 
 namespace LLMSpeak\LLMs;
 
-use LLMSpeak\Google\Support\Facades\Gemini;
 use LLMSpeak\Ollama\Enums\OllamaRole;
+use LLMSpeak\Ollama\OllamaEmbeddingResult;
 use LLMSpeak\Schema\Conversation\ToolCall;
 use LLMSpeak\Schema\Conversation\ToolResult;
+use LLMSpeak\Schema\Embeddings\EmbeddingRequest;
+use LLMSpeak\Schema\Embeddings\EmbeddingResult;
 use LLMSpeak\Support\Facades\LLM;
 use LLMSpeak\Schema\Chat\ChatResult;
 use LLMSpeak\Schema\Chat\ChatRequest;
@@ -52,7 +54,7 @@ class OllamaLLMService extends LLMService
             // Handle tool calls if present
             if(isset($response->message->toolCalls) && !empty($response->message->toolCalls)) {
                 foreach($response->message->toolCalls as $toolCall) {
-                    $results = $results->addToolCall(
+                    $results = $results->addToolRequest(
                         new ToolCall(
                             $toolCall['function']['name'],
                             $toolCall['function']['arguments']
@@ -65,6 +67,29 @@ class OllamaLLMService extends LLMService
         }
 
         throw new \Exception("Ollama request failed or was incomplete.");
+    }
+
+    public function embeddings(EmbeddingRequest $request): EmbeddingResult
+    {
+        $setup = Ollama::embeddings()
+            ->withModel($request->model);
+
+        // Add optional parameters
+        if($request->messages) $setup = $setup->withInput($request->messages);
+
+        /** @var OllamaEmbeddingResult $response */
+        $response = $setup->handle();
+
+        $results = (new EmbeddingResult())
+            ->addModel($request->model);
+
+        if(count($response->embeddings) > 0) {
+            foreach($response->embeddings as $embedding) {
+                $results = $results->addEmbedding($embedding);
+            }
+        }
+
+        return $results;
     }
 
     public static function convertConversation(array $convo): array
@@ -195,5 +220,35 @@ class OllamaLLMService extends LLMService
             ->create();
 
         return LLM::driver('ollama')->text($request);
+    }
+
+    public static function test4(): ?EmbeddingResult
+    {
+        $convo = [
+            "What happens if I get pulled over for speeding?",
+        ];
+
+        $request = new EmbeddingRequest(
+            'hf.co/mariadjadi/fine_tuned_mistral_legal_V2_merged-GGUF:latest',
+            $convo
+        );
+
+        return LLM::driver('ollama')->embeddings($request);
+    }
+
+
+    public static function test5(): ?EmbeddingResult
+    {
+        $convo = [
+            "What happens if I get pulled over for speeding?",
+            "If I go to jail do I get my one phone call?"
+        ];
+
+        $request = new EmbeddingRequest(
+            'hf.co/mariadjadi/fine_tuned_mistral_legal_V2_merged-GGUF:latest',
+            $convo
+        );
+
+        return LLM::driver('ollama')->embeddings($request);
     }
 }

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Facade;
 use LLMSpeak\Builders\ChatRequestor;
 
 /**
+ * @method ChatRequestor usingModel(string $model)
  * @see ChatRequestor
  */
 class CreateChatRequest extends Facade

@@ -5,6 +5,8 @@ namespace LLMSpeak\LLMs;
 use LLMSpeak\Contracts\LLMServiceContract;
 use LLMSpeak\Schema\Chat\ChatRequest;
 use LLMSpeak\Schema\Chat\ChatResult;
+use LLMSpeak\Schema\Embeddings\EmbeddingRequest;
+use LLMSpeak\Schema\Embeddings\EmbeddingResult;
 
 abstract class LLMService implements LLMServiceContract
 {
@@ -15,6 +17,11 @@ abstract class LLMService implements LLMServiceContract
     public function text(ChatRequest $request): ChatResult
     {
         throw new \Exception("Text responses are not supported by this LLM service.");
+    }
+
+    public function embeddings(EmbeddingRequest $request): EmbeddingResult
+    {
+        throw new \Exception("Embeddings are not supported by this LLM service.");
     }
 
     public function structured()

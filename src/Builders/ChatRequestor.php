@@ -36,6 +36,7 @@ class ChatRequestor
 
             if(array_key_exists('content', $entry))
             {
+                if(array_key_exists('tool_call_id', $entry)) return new ToolResult($entry['role'], $entry['name'], $entry['content'], $entry['tool_call_id']);
                 if(is_string($entry['content'])) return new TextMessage($entry['role'], $entry['content']);
                 else{
                     $role = $entry['role'];
@@ -72,8 +73,20 @@ class ChatRequestor
                     elseif(array_key_exists('functionResponse', $part)) return new ToolResult($role, $part['functionResponse']['name'], $part['functionResponse']['response']['content'], "0{$part['functionResponse']['name']}");
                 }
             }
+            elseif(array_key_exists('tool_calls', $entry))
+            {
+                foreach($entry['tool_calls'] as $tool_call)
+                {
+                    $tool_name = $tool_call['function']['name'];
+                    $args = is_string($tool_call['function']['arguments'])? json_decode($tool_call['function']['arguments'], true) : $tool_call['function']['arguments'];
+                    return new ToolCall($tool_name, $args, $tool_call['id']);
+                }
+
+            }
 
         }, $messages);
+
+
         return $this;
     }
 
