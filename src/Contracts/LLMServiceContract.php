@@ -1,13 +1,12 @@
 <?php
 
-namespace LLMSpeak\Contracts;
+namespace LLMSpeak\Core\Contracts;
 
-use LLMSpeak\Schema\Chat\ChatRequest;
-use LLMSpeak\Schema\Chat\ChatResult;
+
 
 interface LLMServiceContract
 {
-    public function text(ChatRequest $request): ChatResult;
-    public function structured();
-    public function stream();
+    //public function text(ChatRequest $request): ChatResult;
+    //public function structured();
+    //public function stream();
 }
