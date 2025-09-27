@@ -1,8 +1,8 @@
 {
-    "name": "projectsaturnstudios/llm-speak",
-    "description": "A Laravel package for connecting to LLM Providers like Gemini, Claude and ChatGPT",
+    "name": "llm-speak/core",
+    "description": "Universal LLM interface for Laravel applications.",
     "type": "library",
-    "version": "0.4.1",
+    "version": "0.8.0",
     "license": "MIT",
     "authors": [
         {
@@ -12,26 +12,52 @@
     ],
     "require": {
         "php": "^8.2",
+        "ext-json": "*",
         "spatie/laravel-data": "^4.11",
         "lorisleiva/laravel-actions": "^2.6",
-        "illuminate/support": "^10.0|^11.0|^12.0"
+        "projectsaturnstudios/quickuuid": "^0.2.0",
+        "projectsaturnstudios/laravel-design-patterns": "^0.1.0"
     },
-    "require-dev": {},
+    "require-dev": {
+        "pestphp/pest": "^4",
+        "orchestra/testbench": "^10.0",
+        "mockery/mockery": "^1.6"
+    },
     "autoload":{
         "psr-4": {
             "LLMSpeak\\Core\\": "src/"
-        }
+        },
+        "files": [
+            "src/Helpers/text-tokenization.php",
+            "src/Helpers/embeddings.php",
+            "src/Helpers/inference.php",
+            "src/Helpers/chat-completions.php"
+        ]
     },
     "autoload-dev":{
-        "psr-4": {}
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
     },
     "minimum-stability": "stable",
     "extra": {
         "laravel": {
             "providers": [
-                "LLMSpeak\\Core\\Providers\\LLMSpeakServiceProvider"
+                "LLMSpeak\\Core\\Providers\\LLMSpeakCoreServiceProvider"
             ]
         }
 
+    },
+    "scripts": {
+        "test": "XDEBUG_MODE=coverage pest",
+        "test-coverage": "XDEBUG_MODE=coverage pest --coverage",
+        "test-coverage-html": "XDEBUG_MODE=coverage pest --coverage --coverage-html=tests/coverage",
+        "test-coverage-text": "XDEBUG_MODE=coverage pest --coverage --coverage-text",
+        "test-coverage-clover": "XDEBUG_MODE=coverage pest --coverage --coverage-clover=tests/coverage.xml"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
     }
 }
