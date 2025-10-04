@@ -114,6 +114,7 @@ class CompletionsModelBuilder extends NeuralModelBuilder
             'n' => $neural_model = $neural_model->setN($value),
             'system_instructions' => $neural_model = $neural_model->setSystemInstructions(is_array($value) ? $value : [$value]),
             'tools' => $neural_model = $neural_model->setTools(is_array($value) ? $value : [$value]),
+            'output_format' => $neural_model = $neural_model->setOutputFormat($value),
 
             default => throw NeuralModelException::BadWhereMethodCall($column),
         };
@@ -251,6 +252,7 @@ class CompletionsModelBuilder extends NeuralModelBuilder
                 'Tools' => $this->whereIn('tools', $parameters[0]),
                 'SystemInstruction' => $this->where('system_instructions', $parameters[0]),
                 'Tool' => $this->where('tools', $parameters[0]),
+                'OutputFormat' => $this->where('output_format', $parameters[0]),
                 default => throw NeuralModelException::BadWhereMethodCall($method),
             };
         }

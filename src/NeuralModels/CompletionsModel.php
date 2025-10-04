@@ -4,6 +4,7 @@ namespace LLMSpeak\Core\NeuralModels;
 
 use Illuminate\Support\Collection;
 use LLMSpeak\Core\Collections\ChatConversation;
+use LLMSpeak\Core\Concerns\NeuralModels\StructuredOutput;
 use LLMSpeak\Core\Support\Facades\AICompletions;
 use LLMSpeak\Core\Concerns\NeuralModels\MaxTokens;
 use LLMSpeak\Core\Concerns\NeuralModels\RandomSeed;
@@ -15,11 +16,11 @@ use LLMSpeak\Core\Concerns\NeuralModels\FrequencyPenalty;
 use LLMSpeak\Core\Concerns\NeuralModels\MultipleGoesAtIt;
 use LLMSpeak\Core\Concerns\NeuralModels\StreamingSettings;
 
-class CompletionsModel extends NeuralModel
+class  CompletionsModel extends NeuralModel
 {
     /** Request Control Concerns */
     use FrequencyPenalty, Temperature, PresencePenalty, RandomSeed;
-    use MaxTokens, MultipleGoesAtIt, StreamingSettings;
+    use MaxTokens, MultipleGoesAtIt, StreamingSettings, StructuredOutput;
 
     protected static string $builder = CompletionsModelBuilder::class;
 
@@ -141,5 +142,19 @@ class CompletionsModel extends NeuralModel
     public function getTools(): array
     {
         return $this->tools;
+    }
+
+    public function formatResponse(): ?array
+    {
+        $results = null;
+
+        if(!empty($this->output_format))
+        {
+            $resp =  $this->getLatestResponseMessage()[0]->content->text;
+            $cleaned = preg_replace('/[\r\n]+/', '', $resp);
+            $results = json_decode($cleaned, true);
+        }
+
+        return $results;
     }
 }
